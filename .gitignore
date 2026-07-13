@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Logs / temporales
+*.log
+.cache/
+.tmp/
+
+# Vercel
+.vercel/
+
+# --- Videos grandes (opcional) ---
+# GitHub rechaza archivos de más de 100 MB. Si algún MP4 supera ese
+# tamaño, NO lo subas a git: aloja el video fuera (ver README) o usa Git LFS.
+# Para excluir todos los MP4 del repo, descomenta la línea siguiente:
+# videos/**/*.mp4
