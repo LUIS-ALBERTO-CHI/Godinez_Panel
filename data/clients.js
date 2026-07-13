@@ -37,7 +37,7 @@ window.PORTAL_DATA = {
           id: "piscina",
           title: "Reel - Piscina",
           description: "Video promocional construccion/remodelación de piscina.",
-          src: "videos/aura/REEL PISCINAS AURA .mp4",
+          src: "videos/aura/reel-piscina.mp4",
           poster: "",
           version: "v1",
           tags: ["piscina", "construcción", "remodelación"]
