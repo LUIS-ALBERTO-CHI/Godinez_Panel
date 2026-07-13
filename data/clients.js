@@ -22,52 +22,25 @@ window.PORTAL_DATA = {
   agency: {
     name: "Godínez Creativos",
     tagline: "Portal de Entregas",
-    contactEmail: "hola@godinezcreativos.qzz.io",
+    contactEmail: "godinezcreativoss@gmail.com",
     website: "https://godinezcreativos.qzz.io"
   },
 
   clients: [
     {
-      id: "acme-corp",
-      name: "ACME Corp",
-      code: "ACME2026",
-      project: "Campaña Verano 2026",
+      id: "aura",
+      name: "Aura Construcciones",
+      code: "aura2026",
+      project: "Reels Julio 2026",
       videos: [
         {
-          id: "acme-spot-30",
-          title: "Spot Principal — 30s",
-          description: "Versión para redes sociales (formato horizontal 16:9).",
-          src: "videos/acme-corp/spot-principal.mp4",
-          poster: "assets/posters/acme-spot.jpg",
-          version: "v2",
-          tags: ["Instagram", "YouTube", "Final"]
-        },
-        {
-          id: "acme-teaser-15",
-          title: "Teaser — 15s",
-          description: "Corte corto vertical para Stories y Reels.",
-          src: "videos/acme-corp/teaser-15s.mp4",
+          id: "piscina",
+          title: "Reel - Piscina",
+          description: "Video promocional construccion/remodelación de piscina.",
+          src: "videos/aura/REEL PISCINAS AURA .mp4",
           poster: "",
           version: "v1",
-          tags: ["Stories", "Vertical", "Revisión"]
-        }
-      ]
-    },
-
-    {
-      id: "lumina",
-      name: "Lumina Studio",
-      code: "LUMINA07",
-      project: "Video Corporativo 2026",
-      videos: [
-        {
-          id: "lumina-corporativo",
-          title: "Video Corporativo — 90s",
-          description: "Presentación institucional. Pendiente de tu aprobación.",
-          src: "videos/lumina/corporativo.mp4",
-          poster: "",
-          version: "v1",
-          tags: ["Web", "LinkedIn", "Revisión"]
+          tags: ["piscina", "construcción", "remodelación"]
         }
       ]
     }

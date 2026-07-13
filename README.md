@@ -5,7 +5,39 @@ código de acceso y ve **solo sus videos**, con opción de **aprobar**, **solici
 cambios** y **dejar comentarios**. Los videos se reproducen desde archivos MP4
 locales (self-hosted).
 
+Las revisiones ahora se guardan en **Firebase (Firestore)** y la agencia las ve en
+**tiempo real** desde un panel de administración (`admin.html`) — ya no dependen del
+correo del cliente.
+
 Diseño basado en la paleta **Cherry / Neon** de tu proyecto `godinez-creativos`.
+
+---
+
+## 🔥 Configuración de Firebase (una sola vez)
+
+El portal usa Firebase en el **plan gratuito (Spark)**: Firestore + Authentication.
+No se usan Cloud Functions.
+
+1. **Crea/usa un proyecto** en [console.firebase.google.com](https://console.firebase.google.com)
+   y registra una **app web** (`</>`). Copia el objeto `firebaseConfig` que te da y
+   pégalo en **`firebase-config.js`** (reemplaza los valores `TODO_...`).
+2. **Authentication → Método de acceso:** habilita **Anónimo** y
+   **Correo electrónico/contraseña**. En **Authentication → Users**, crea el usuario
+   admin **`godinezcreativoss@gmail.com`** con la contraseña que elijas.
+3. **Firestore Database → Crear base de datos** (modo producción). Ve a la pestaña
+   **Reglas**, pega el contenido de **`firestore.rules`** y **Publica**.
+   - El admin se identifica por su correo dentro de las reglas. Si cambias de correo,
+     actualízalo en `firestore.rules` **y** en `firebase-config.js` (`ADMIN_EMAIL`).
+4. Abre **`admin.html`**, inicia sesión con la cuenta admin y pulsa
+   **"Importar datos iniciales"** para subir a Firestore los clientes/videos que ya
+   tienes en `data/clients.js`.
+
+> El `firebaseConfig` web **no es secreto** (es seguro subirlo a git). La seguridad
+> real la dan las Reglas de Firestore.
+>
+> La primera vez que abras el panel puede que la consola de Firestore te pida crear
+> un **índice** para la consulta de revisiones: haz clic en el enlace que aparece en
+> la consola del navegador y créalo con un clic.
 
 ---
 
@@ -28,68 +60,70 @@ npx serve .
 
 **Con VS Code**: instala la extensión *Live Server* y pulsa "Go Live".
 
-> Códigos de demo incluidos: **ACME2026** y **LUMINA07** (o pulsa los chips en la pantalla de acceso).
+El portal de clientes está en `http://localhost:8080/index.html` y el panel de la
+agencia en `http://localhost:8080/admin.html`.
 
 ---
 
-## 👥 Añadir un cliente
+## 👥 Añadir un cliente (desde el panel)
 
-Edita **`data/clients.js`** y copia un bloque dentro de `clients`:
+Ya **no** se editan clientes a mano en `data/clients.js`. Abre **`admin.html`**,
+inicia sesión y usa el formulario **"Nuevo cliente"**:
 
-```js
-{
-  id: "nombre-cliente",        // identificador único (sin espacios)
-  name: "Nombre Cliente",      // se muestra en el portal
-  code: "CODIGO2026",          // código de acceso que le compartes
-  project: "Campaña X",        // nombre del proyecto
-  videos: [ /* ver abajo */ ]
-}
-```
+- **Código de acceso** — es lo que compartes con el cliente (p. ej. `AURA2026`).
+  Se guarda en MAYÚSCULAS y es el identificador único del cliente.
+- **Nombre** y **Proyecto**.
 
 Comparte con tu cliente el enlace del portal + su **código de acceso**.
 
+> `data/clients.js` se conserva solo como **semilla** para el botón
+> "Importar datos iniciales" la primera vez.
+
 ---
 
-## 🎬 Añadir un video
+## 🎬 Añadir un video (desde el panel)
+
+Los videos siguen siendo **self-hosted** (Firebase no aloja los MP4):
 
 1. Copia el archivo `.mp4` dentro de `videos/<carpeta-del-cliente>/`.
 2. (Opcional) Copia una imagen de portada en `assets/posters/`.
-3. Añade un bloque en la lista `videos` del cliente:
+3. En **`admin.html`**, en la tarjeta del cliente usa **"Añadir / editar video"**:
+   - **id** único (ej. `piscina`), **título**, y **ruta del MP4** en `src`
+     (ej. `videos/aura/reel.mp4`).
+   - Opcionales: **poster**, **versión** (ej. `v1`, `v2`) y **etiquetas**
+     (separadas por coma).
 
-```js
-{
-  id: "video-unico",
-  title: "Spot Principal — 30s",
-  description: "Versión final para redes.",
-  src: "videos/nombre-cliente/spot.mp4",   // ruta al MP4
-  poster: "assets/posters/spot.jpg",       // opcional (si no, se usa un fondo)
-  version: "v2",                           // opcional, se muestra como etiqueta
-  tags: ["Instagram", "Final"]             // opcional
-}
-```
+Para entregar una nueva versión: sube el nuevo MP4, edita el video en el panel
+(cambia `src` y sube la `versión`) y avisa al cliente.
 
 Formato recomendado: **MP4 (H.264 + AAC)**, que reproduce en todos los navegadores.
 
 ---
 
-## 📝 Cómo funciona la revisión del cliente
+## 📝 Cómo funciona la revisión (flujo completo)
 
-- Cada cliente pulsa **"Ver y revisar"**, reproduce el video y elige
-  **Aprobar** o **Solicitar cambios**, con un comentario opcional.
-- El estado y los comentarios se guardan en el **navegador del cliente**
-  (localStorage) y se reflejan en el resumen (Aprobados / Pendientes / Con cambios).
-- Con **"Enviar feedback a la agencia"** se abre su correo con un resumen
-  ya redactado hacia `agency.contactEmail` (configúralo en `data/clients.js`).
+1. El cliente entra con su **código**, pulsa **"Ver y revisar"**, reproduce el video
+   y elige **Aprobar** o **Solicitar cambios**, con un comentario opcional.
+2. Al pulsar **"Guardar revisión"** o **"Enviar a la agencia"**, la revisión se
+   guarda en **Firestore** (`clients/{CODIGO}/reviews/{videoId}`).
+3. En **`admin.html`** la revisión aparece **en tiempo real**, con cliente, video,
+   estado y comentario. El resumen del cliente (Aprobados / Pendientes / Con cambios)
+   también se actualiza en vivo.
+4. Si son cambios: subes la nueva versión (ver arriba) y el ciclo se repite hasta
+   que el cliente aprueba.
 
 ---
 
-## 🔒 Nota sobre privacidad
+## 🔒 Nota sobre seguridad
 
-El código de acceso es una **llave del lado del cliente** (comodidad, no seguridad
-criptográfica): los datos viajan en el propio sitio. Es ideal para compartir
-entregas por enlace privado. **No publiques aquí material realmente confidencial**
-si el sitio es accesible públicamente. Para privacidad fuerte se necesitaría un
-backend con autenticación real (te lo puedo montar si lo necesitas).
+- El **admin** entra con **login real** (correo + contraseña) y es el único que puede
+  listar clientes y editar datos (garantizado por las Reglas de Firestore).
+- El **cliente** entra con su **código**, que es el identificador de su documento.
+  Solo se puede leer un cliente **conociendo su código exacto**; nadie puede
+  enumerar la lista de clientes. El cliente usa login **anónimo** por detrás para
+  poder dejar sus revisiones.
+- El `firebaseConfig` web no es secreto; la protección la dan las reglas
+  (`firestore.rules`), no el ocultar las claves.
 
 ---
 
@@ -97,14 +131,18 @@ backend con autenticación real (te lo puedo montar si lo necesitas).
 
 ```
 godinez-video-portal/
-├── index.html          # Página del portal
+├── index.html          # Portal de clientes
+├── admin.html          # Panel de la agencia (admin)
 ├── styles.css          # Tema Cherry/Neon
-├── app.js              # Lógica (acceso, reproductor, revisiones)
+├── app.js              # Lógica del cliente (Firestore + login anónimo)
+├── admin.js            # Lógica del panel (auth, CRUD, revisiones en vivo)
+├── firebase-config.js  # ⭐ Pega aquí tu firebaseConfig + ADMIN_EMAIL
+├── firebase-init.js    # Inicializa Firebase (app, auth, db)
+├── firestore.rules     # Reglas de seguridad (pégalas en la consola Firebase)
 ├── data/
-│   └── clients.js      # ⭐ AQUÍ configuras clientes y videos
-├── videos/             # Tus archivos .mp4 por cliente
-│   ├── acme-corp/
-│   └── lumina/
+│   └── clients.js      # Semilla para "Importar datos iniciales"
+├── videos/             # Tus archivos .mp4 por cliente (self-hosted)
+│   └── aura/
 ├── assets/
 │   └── posters/        # Imágenes de portada (opcional)
 └── README.md

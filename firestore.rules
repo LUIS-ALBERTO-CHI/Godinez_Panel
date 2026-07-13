@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// ============================================================================
+// Reglas de seguridad de Firestore — Portal de Entregas Godínez Creativos
+// ----------------------------------------------------------------------------
+// Modelo:
+//   clients/{CODE}            -> el ID del documento ES el código de acceso.
+//                                Para leerlo hay que conocer el código exacto;
+//                                NO se puede listar/enumerar la colección.
+//     reviews/{videoId}       -> revisiones del cliente (las escribe el propio
+//                                cliente autenticado de forma anónima).
+//
+// Admin: se identifica por su correo (login email/contraseña). Cámbialo aquí y
+// en firebase-config.js si usas otro.
+// ============================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'godinezcreativoss@gmail.com';
+    }
+
+    // Valida la forma de una revisión enviada por un cliente.
+    function validReview() {
+      let d = request.resource.data;
+      return d.status in ['approved', 'changes', 'pending']
+        && (!('comment' in d) || d.comment is string);
+    }
+
+    match /clients/{code} {
+      // Leer un cliente concreto: hay que conocer el código (ID del doc).
+      // Listar/enumerar la colección: solo admin.
+      allow get:  if isSignedIn();
+      allow list: if isAdmin();
+
+      // Alta/edición/baja de clientes y sus videos: solo admin.
+      allow write: if isAdmin();
+
+      match /reviews/{videoId} {
+        // El cliente autenticado puede leer y dejar su revisión.
+        allow read:   if isSignedIn();
+        allow create, update: if isSignedIn() && validReview();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Consulta global de revisiones (collectionGroup) para el panel admin.
+    match /{path=**}/reviews/{videoId} {
+      allow read: if isSignedIn();
+    }
+  }
+}

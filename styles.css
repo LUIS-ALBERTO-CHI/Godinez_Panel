@@ -96,6 +96,19 @@ body {
 .brand-name { font-weight: 800; letter-spacing: 0.02em; line-height: 1.1; }
 .brand-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.22em; text-transform: uppercase; }
 
+/* Logo como imagen (marca del proyecto godinez-creativos) */
+img.brand-mark {
+  object-fit: cover; background: #000; padding: 0;
+}
+.brand-login {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+.brand-logo {
+  width: 220px; max-width: 78%; height: auto;
+  filter: drop-shadow(0 0 22px var(--primary-cherry-glow));
+}
+
 .text-gradient {
   background: linear-gradient(135deg, #ffffff 30%, #ff7bb5 100%);
   -webkit-background-clip: text; background-clip: text;
@@ -404,6 +417,73 @@ body {
   .login-card { padding: 34px 24px; }
   .modal-body { padding: 22px 20px 24px; }
   .stat { flex: 1; }
+}
+
+/* ============================================================================
+   Panel de administración (admin.html)
+   ============================================================================ */
+.btn-xs { padding: 6px 11px; font-size: 11px; }
+.btn-ghost.danger { color: #ff6a9c; border-color: rgba(246,5,102,0.35); }
+.btn-ghost.danger:hover { border-color: rgba(246,5,102,0.7); }
+
+.admin-toolbar { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+.admin-toolbar .saved-note { margin: 0; text-align: left; }
+
+/* Tarjetas / paneles reutilizables */
+.admin-panel {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 18px; padding: 22px 22px 24px; margin-bottom: 24px;
+}
+.admin-panel h4 { margin: 0 0 16px; font-size: 15px; }
+
+/* Formularios */
+.admin-form .field { margin-bottom: 12px; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.admin-form-actions { display: flex; gap: 10px; margin-top: 14px; }
+
+/* Revisiones en vivo */
+.admin-reviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.review-card {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 16px 18px;
+}
+.review-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.review-time { font-size: 11px; color: var(--text-muted); }
+.review-meta { font-size: 13px; line-height: 1.5; }
+.review-code {
+  display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 700;
+  color: var(--text-muted); background: rgba(255,255,255,0.05);
+  padding: 2px 8px; border-radius: 8px; letter-spacing: 0.06em;
+}
+.review-comment { margin: 10px 0 0; font-size: 13.5px; line-height: 1.55; color: #f2dbe6; }
+.review-comment.muted, .muted { color: var(--text-muted); }
+
+/* Clientes */
+.admin-clients { display: flex; flex-direction: column; gap: 18px; }
+.admin-client-card {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 18px; padding: 20px 22px;
+}
+.admin-client-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.admin-client-actions, .admin-video-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.admin-video-list { list-style: none; margin: 16px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.admin-video-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  font-size: 13.5px;
+}
+.admin-video-src { font-size: 11px; color: var(--text-muted); margin-top: 3px; word-break: break-all; }
+.version-tag.inline { position: static; font-size: 10px; padding: 2px 7px; }
+
+.admin-video-form { margin-top: 6px; border-top: 1px dashed var(--glass-border); padding-top: 16px; }
+.admin-video-form h5 { margin: 0 0 12px; font-size: 12px; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+
+@media (max-width: 640px) {
+  .admin-form-grid { grid-template-columns: 1fr; }
+  .admin-client-head { flex-direction: column; }
+  .admin-video-row { flex-direction: column; align-items: flex-start; }
 }
 
 /* Scrollbars */

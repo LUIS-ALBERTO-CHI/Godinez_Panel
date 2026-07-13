@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Godínez Creativos — Portal de Entregas</title>
   <meta name="description" content="Portal privado de entrega y revisión de videos — Godínez Creativos." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,12 +21,9 @@
     <!-- ==================== PANTALLA DE ACCESO ==================== -->
     <section id="login-view" class="login-wrap">
       <div class="login-card">
-        <div class="brand">
-          <div class="brand-mark" id="brand-mark">G</div>
-          <div>
-            <div class="brand-name" id="brand-name">Godínez Creativos</div>
-            <div class="brand-sub" id="brand-sub">Portal de Entregas</div>
-          </div>
+        <div class="brand-login">
+          <img class="brand-logo" src="assets/logo.png" alt="Godínez Creativos" />
+          <span class="brand-sub" id="brand-sub">Portal de Entregas</span>
         </div>
 
         <h1 class="login-title">Acceso de <span class="text-gradient">cliente</span></h1>
@@ -58,7 +56,7 @@
       <div class="topbar">
         <div class="container topbar-inner">
           <div class="brand">
-            <div class="brand-mark">G</div>
+            <img class="brand-mark" src="assets/favicon.svg" alt="Godínez Creativos" />
             <div>
               <div class="brand-name">Godínez Creativos</div>
               <div class="brand-sub">Portal de Entregas</div>
@@ -84,7 +82,7 @@
       </div>
 
       <footer class="foot">
-        <p>© <span id="year"></span> Godínez Creativos · <a id="foot-site" href="#" target="_blank" rel="noopener">godinezcreativos.qzz.io</a></p>
+        <p>© <span id="year"></span> Godínez Creativos · <a id="foot-site" href="#" target="_blank" rel="noopener">godinezcreativos.qzz.io</a> · <a href="admin.html">Panel de la agencia</a></p>
       </footer>
     </section>
 
@@ -123,7 +121,6 @@
 
   </div>
 
-  <script src="data/clients.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
