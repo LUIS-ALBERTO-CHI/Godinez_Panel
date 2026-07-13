@@ -102,15 +102,21 @@ Formato recomendado: **MP4 (H.264 + AAC)**, que reproduce en todos los navegador
 
 ## 📝 Cómo funciona la revisión (flujo completo)
 
-1. El cliente entra con su **código**, pulsa **"Ver y revisar"**, reproduce el video
-   y elige **Aprobar** o **Solicitar cambios**, con un comentario opcional.
-2. Al pulsar **"Guardar revisión"** o **"Enviar a la agencia"**, la revisión se
-   guarda en **Firestore** (`clients/{CODIGO}/reviews/{videoId}`).
-3. En **`admin.html`** la revisión aparece **en tiempo real**, con cliente, video,
-   estado y comentario. El resumen del cliente (Aprobados / Pendientes / Con cambios)
-   también se actualiza en vivo.
+1. El cliente entra con su **código** (o con un **enlace directo** `index.html?code=CODIGO`
+   que copias desde el panel), pulsa **"Ver y revisar"**, reproduce el video y elige
+   **Aprobar** o **Solicitar cambios** (obligatorio), con un comentario opcional.
+2. Al pulsar **"Enviar mi revisión"**, se guarda en **Firestore**
+   (`clients/{CODIGO}/reviews/{videoId}`) al instante.
+3. En **`admin.html`** la revisión aparece **en tiempo real** y, si tienes el panel
+   abierto, salta un **aviso** (sonido + notificación de escritorio + contador en la
+   pestaña). Las revisiones sin atender se marcan como **NUEVA**; puedes pulsar
+   **"Marcar como atendida"** cuando la resuelvas.
 4. Si son cambios: subes la nueva versión (ver arriba) y el ciclo se repite hasta
    que el cliente aprueba.
+
+> **Avisos con el panel cerrado:** las notificaciones en vivo requieren tener
+> `admin.html` abierto. Para recibir un correo aunque esté cerrado hace falta
+> integrar un envío (p. ej. EmailJS, gratis) o Cloud Functions (plan Blaze).
 
 ---
 

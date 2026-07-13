@@ -43,8 +43,13 @@ const el = {};
   "dash-view", "client-badge", "logout-btn", "dash-eyebrow", "dash-client",
   "dash-project", "summary", "video-grid", "year", "foot-site",
   "modal-overlay", "modal-video", "modal-title", "modal-desc", "modal-close",
-  "choice-approved", "choice-changes", "comment-box", "save-btn", "send-btn", "saved-note"
+  "status-choices", "choice-approved", "choice-changes", "comment-box", "send-btn", "saved-note"
 ].forEach((k) => { el[k] = $(k); });
+
+function setNote(msg, isError) {
+  el["saved-note"].style.color = isError ? "#ff6a9c" : "";
+  el["saved-note"].textContent = msg;
+}
 
 /* ---------- Utilidades ---------- */
 function normCode(code) { return (code || "").trim().toUpperCase(); }
@@ -261,6 +266,7 @@ async function persistReview() {
     comment: el["comment-box"].value.trim(),
     videoTitle: activeVideo.title || activeVideo.id,
     videoVersion: activeVideo.version || "",
+    attended: false,            // una revisión nueva/actualizada vuelve a estar "sin atender"
     updatedAt: serverTimestamp()
   };
   const ref = doc(db, "clients", activeClient.code, "reviews", activeVideo.id);
@@ -268,30 +274,25 @@ async function persistReview() {
   return payload;
 }
 
-async function saveCurrentReview() {
-  el["saved-note"].textContent = "Guardando…";
-  try {
-    await persistReview();
-    el["saved-note"].textContent = "✓ Revisión guardada.";
-  } catch (e) {
-    console.error(e);
-    el["saved-note"].textContent = "No se pudo guardar. Inténtalo de nuevo.";
-    return;
-  }
-  setTimeout(() => { el["saved-note"].textContent = ""; }, 3000);
-}
-
 async function sendFeedback() {
-  el["saved-note"].textContent = "Enviando…";
-  try {
-    await persistReview();
-    el["saved-note"].textContent = "✓ Revisión enviada a la agencia.";
-  } catch (e) {
-    console.error(e);
-    el["saved-note"].textContent = "No se pudo enviar. Inténtalo de nuevo.";
+  // Obliga a elegir un estado antes de enviar.
+  if (!pendingStatus) {
+    setNote("Elige “Aprobar” o “Solicitar cambios” antes de enviar.", true);
+    el["status-choices"].classList.remove("shake");
+    void el["status-choices"].offsetWidth; // reinicia la animación
+    el["status-choices"].classList.add("shake");
     return;
   }
-  setTimeout(() => { el["saved-note"].textContent = ""; }, 4000);
+  setNote("Enviando…", false);
+  try {
+    await persistReview();
+    setNote("✓ ¡Listo! Tu revisión llegó a la agencia.", false);
+  } catch (e) {
+    console.error(e);
+    setNote("No se pudo enviar. Inténtalo de nuevo.", true);
+    return;
+  }
+  setTimeout(() => { setNote("", false); }, 4000);
 }
 
 /* ---------- Eventos ---------- */
@@ -321,7 +322,6 @@ function bindEvents() {
     updateChoiceUI();
   });
 
-  el["save-btn"].addEventListener("click", saveCurrentReview);
   el["send-btn"].addEventListener("click", sendFeedback);
 }
 
@@ -344,6 +344,10 @@ async function init() {
       "No se pudo conectar con el servidor. Revisa la configuración de Firebase.";
     return;
   }
+
+  // Enlace directo con código: index.html?code=AURA2026 → entra solo.
+  const codeParam = new URLSearchParams(location.search).get("code");
+  if (codeParam) { el.code.value = codeParam; attemptLogin(codeParam); return; }
 
   // Reanudar sesión si existe (mismo navegador).
   let saved = null;

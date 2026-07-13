@@ -43,6 +43,35 @@ function note(msg, ms = 3500) {
 let editingCode = null;     // código en edición (null = alta nueva)
 let unsubReviews = null;
 let clientsCache = {};      // { CODE: data } de la última carga
+let reviewsFirstLoad = true; // para no notificar las revisiones ya existentes al abrir
+
+/* ---------- Aviso: sonido + notificación de escritorio ---------- */
+let audioCtx = null;
+function beep() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = "sine"; o.frequency.value = 880; g.gain.value = 0.05;
+    o.start(); o.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
+function updateTitle(n) {
+  document.title = (n > 0 ? `(${n}) ` : "") + "Godínez Creativos — Panel de la agencia";
+}
+function notifyNewReview(code, d) {
+  const name = (clientsCache[code] && clientsCache[code].name) || code;
+  beep();
+  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+    try {
+      new Notification("Nueva revisión — " + name, {
+        body: (STATUS_LABEL[d.status] || "") + ": " + (d.comment || "(sin comentarios)"),
+        icon: "assets/favicon.svg"
+      });
+    } catch (e) {}
+  }
+}
 
 /* ============================================================================
    AUTENTICACIÓN
@@ -90,6 +119,10 @@ function showPanel(user) {
   $("admin-year").textContent = "2026";
   $("admin-login-view").classList.add("hidden");
   $("admin-view").classList.remove("hidden");
+  // Pide permiso para notificaciones de escritorio (una sola vez).
+  if (typeof Notification !== "undefined" && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
   subscribeReviews();
   loadClients();
 }
@@ -104,15 +137,34 @@ function tsMillis(ts) {
 
 function subscribeReviews() {
   if (unsubReviews) { unsubReviews(); unsubReviews = null; }
+  reviewsFirstLoad = true;
   // Sin orderBy: así no hace falta crear un índice de collectionGroup.
-  // Ordenamos por fecha (más reciente primero) aquí en JS.
   unsubReviews = onSnapshot(collectionGroup(db, "reviews"), (qs) => {
+    // Avisar solo de revisiones nuevas/actualizadas sin atender (no en la carga inicial).
+    if (!reviewsFirstLoad) {
+      qs.docChanges().forEach((ch) => {
+        if (ch.type === "added" || ch.type === "modified") {
+          const d = ch.doc.data();
+          if (!d.attended) {
+            const code = ch.doc.ref.parent.parent ? ch.doc.ref.parent.parent.id : "?";
+            notifyNewReview(code, d);
+          }
+        }
+      });
+    }
+    reviewsFirstLoad = false;
+
     const rows = [];
     qs.forEach((d) => {
       const code = d.ref.parent.parent ? d.ref.parent.parent.id : "?";
       rows.push({ code, videoId: d.id, ...d.data() });
     });
-    rows.sort((a, b) => tsMillis(b.updatedAt) - tsMillis(a.updatedAt));
+    // No atendidas primero; dentro de cada grupo, más recientes primero.
+    rows.sort((a, b) => {
+      const an = a.attended ? 1 : 0, bn = b.attended ? 1 : 0;
+      if (an !== bn) return an - bn;
+      return tsMillis(b.updatedAt) - tsMillis(a.updatedAt);
+    });
     renderReviews(rows);
   }, (err) => {
     console.error("reviews snapshot:", err);
@@ -122,13 +174,15 @@ function subscribeReviews() {
 
 function renderReviews(rows) {
   const list = $("reviews-list");
+  const pending = rows.filter((r) => !r.attended).length;
+  updateTitle(pending);
   $("reviews-empty").style.display = rows.length ? "none" : "";
   list.innerHTML = "";
   rows.forEach((r) => {
     const cli = clientsCache[r.code];
     const cliName = cli ? cli.name : r.code;
     const card = document.createElement("article");
-    card.className = "review-card";
+    card.className = "review-card" + (r.attended ? " attended" : "");
     card.innerHTML = `
       <div class="review-top">
         <span class="status-pill ${STATUS_CLASS[r.status] || "pending"}">
@@ -138,13 +192,36 @@ function renderReviews(rows) {
         <span class="review-time">${esc(fmtTime(r.updatedAt))}</span>
       </div>
       <div class="review-meta">
+        ${r.attended ? "" : `<span class="new-pill">NUEVA</span>`}
         <b>${esc(cliName)}</b> · ${esc(r.videoTitle || r.videoId)}${r.videoVersion ? " (" + esc(r.videoVersion) + ")" : ""}
         <span class="review-code">${esc(r.code)}</span>
       </div>
       ${r.comment ? `<p class="review-comment">${esc(r.comment)}</p>` : `<p class="review-comment muted">Sin comentarios.</p>`}
+      <div class="review-actions-admin">
+        ${r.attended
+          ? `<span class="attended-label">✓ Atendida</span>`
+          : `<button class="btn btn-ghost btn-xs" data-attend="${esc(r.code)}|${esc(r.videoId)}">Marcar como atendida</button>`}
+      </div>
     `;
     list.appendChild(card);
   });
+
+  list.querySelectorAll("[data-attend]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const [code, vid] = b.getAttribute("data-attend").split("|");
+      markAttended(code, vid);
+    }));
+}
+
+async function markAttended(code, videoId) {
+  try {
+    await setDoc(doc(db, "clients", code, "reviews", videoId),
+      { attended: true, attendedAt: serverTimestamp() }, { merge: true });
+    // El onSnapshot re-renderiza solo.
+  } catch (e) {
+    console.error(e);
+    note("No se pudo marcar como atendida.", 6000);
+  }
 }
 
 /* ============================================================================
@@ -198,6 +275,7 @@ function renderClients(arr) {
           <p class="card-desc">${esc(c.project || "")} · Código: <b>${esc(c.code)}</b></p>
         </div>
         <div class="admin-client-actions">
+          <button class="btn btn-ghost btn-xs" data-copy-link="${esc(c.code)}">Copiar enlace</button>
           <button class="btn btn-ghost btn-xs" data-edit-client="${esc(c.code)}">Editar</button>
           <button class="btn btn-ghost btn-xs danger" data-del-client="${esc(c.code)}">Borrar</button>
         </div>
@@ -230,6 +308,9 @@ function renderClients(arr) {
 
 function bindClientListEvents() {
   const list = $("clients-list");
+
+  list.querySelectorAll("[data-copy-link]").forEach((b) =>
+    b.addEventListener("click", () => copyAccessLink(b.getAttribute("data-copy-link"))));
 
   list.querySelectorAll("[data-edit-client]").forEach((b) =>
     b.addEventListener("click", () => startEditClient(b.getAttribute("data-edit-client"))));
@@ -306,6 +387,19 @@ function resetClientForm() {
   $("client-form-title").textContent = "Nuevo cliente";
   $("cf-code").disabled = false;
   $("client-form").reset();
+}
+
+async function copyAccessLink(code) {
+  const url = new URL("index.html", location.href);
+  url.searchParams.set("code", code);
+  const link = url.href;
+  try {
+    await navigator.clipboard.writeText(link);
+    note("Enlace copiado: " + link, 6000);
+  } catch (e) {
+    // Fallback si el navegador bloquea el portapapeles.
+    window.prompt("Copia el enlace de acceso:", link);
+  }
 }
 
 async function deleteClient(code) {

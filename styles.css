@@ -388,6 +388,13 @@ img.brand-mark {
 .choice.sel-approved { background: rgba(53,208,127,0.14); border-color: var(--ok); color: var(--ok); }
 .choice.sel-changes  { background: rgba(246,5,102,0.14); border-color: var(--primary-cherry); color: #ff6a9c; }
 
+.status-choices.shake { animation: shake 0.4s var(--ease); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
 .comment-box {
   width: 100%; min-height: 96px; resize: vertical;
   padding: 14px 16px; border-radius: 14px;
@@ -487,6 +494,18 @@ img.brand-mark {
 }
 .review-comment { margin: 10px 0 0; font-size: 13.5px; line-height: 1.55; color: #f2dbe6; }
 .review-comment.muted, .muted { color: var(--text-muted); }
+
+/* Revisiones: nueva vs atendida */
+.new-pill {
+  display: inline-block; margin-right: 6px; font-size: 10px; font-weight: 800;
+  letter-spacing: 0.08em; padding: 2px 8px; border-radius: 9999px;
+  background: var(--primary-cherry); color: #fff;
+  box-shadow: 0 0 14px var(--primary-cherry-glow);
+}
+.review-card.attended { opacity: 0.55; }
+.review-card.attended:hover { opacity: 0.85; }
+.review-actions-admin { margin-top: 12px; }
+.attended-label { font-size: 12px; font-weight: 700; color: var(--ok); }
 
 /* Clientes */
 .admin-clients { display: flex; flex-direction: column; gap: 18px; }
