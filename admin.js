@@ -39,6 +39,21 @@ function note(msg, ms = 3500) {
   if (ms) setTimeout(() => { if (n.textContent === msg) n.textContent = ""; }, ms);
 }
 
+let toastTimer = null;
+function toast(msg, ms = 2600) {
+  let t = document.getElementById("toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "toast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), ms);
+}
+
 /* ---------- Estado ---------- */
 let editingCode = null;     // código en edición (null = alta nueva)
 let unsubReviews = null;
@@ -310,7 +325,7 @@ function bindClientListEvents() {
   const list = $("clients-list");
 
   list.querySelectorAll("[data-copy-link]").forEach((b) =>
-    b.addEventListener("click", () => copyAccessLink(b.getAttribute("data-copy-link"))));
+    b.addEventListener("click", () => copyAccessLink(b.getAttribute("data-copy-link"), b)));
 
   list.querySelectorAll("[data-edit-client]").forEach((b) =>
     b.addEventListener("click", () => startEditClient(b.getAttribute("data-edit-client"))));
@@ -389,13 +404,18 @@ function resetClientForm() {
   $("client-form").reset();
 }
 
-async function copyAccessLink(code) {
+async function copyAccessLink(code, btn) {
   const url = new URL("index.html", location.href);
   url.searchParams.set("code", code);
   const link = url.href;
   try {
     await navigator.clipboard.writeText(link);
-    note("Enlace copiado: " + link, 6000);
+    toast("✓ Enlace copiado al portapapeles");
+    if (btn) {
+      const old = btn.textContent;
+      btn.textContent = "✓ Copiado";
+      setTimeout(() => { btn.textContent = old; }, 1800);
+    }
   } catch (e) {
     // Fallback si el navegador bloquea el portapapeles.
     window.prompt("Copia el enlace de acceso:", link);
