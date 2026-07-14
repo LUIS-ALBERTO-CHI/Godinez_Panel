@@ -42,21 +42,9 @@ const el = {};
   "brand-name", "brand-sub",
   "dash-view", "client-badge", "logout-btn", "dash-eyebrow", "dash-client",
   "dash-project", "summary", "video-grid", "year", "foot-site",
-  "modal-overlay", "modal-video", "video-loader", "modal-title", "modal-desc", "modal-close",
+  "modal-overlay", "modal-video", "modal-title", "modal-desc", "modal-close",
   "status-choices", "choice-approved", "choice-changes", "comment-box", "send-btn", "saved-note"
 ].forEach((k) => { el[k] = $(k); });
-
-function showLoader() {
-  el["video-loader"].innerHTML = '<div class="spinner"></div>';
-  el["video-loader"].classList.add("show");
-}
-function hideLoader() {
-  el["video-loader"].classList.remove("show");
-}
-function loaderError() {
-  el["video-loader"].innerHTML = '<p class="video-error">No se pudo cargar el video. Revisa tu conexión o avísanos.</p>';
-  el["video-loader"].classList.add("show");
-}
 
 function setNote(msg, isError) {
   el["saved-note"].style.color = isError ? "#ff6a9c" : "";
@@ -241,7 +229,6 @@ function openModal(videoId) {
 
   el["modal-title"].textContent = v.title;
   el["modal-desc"].textContent = v.description || "";
-  showLoader();
   el["modal-video"].src = v.src;
   if (v.poster) el["modal-video"].poster = v.poster;
   else el["modal-video"].removeAttribute("poster");
@@ -263,7 +250,6 @@ function closeModal() {
   vid.pause();
   vid.removeAttribute("src");
   vid.load();
-  hideLoader();
   document.body.style.overflow = "";
   activeVideo = null;
 }
@@ -320,12 +306,6 @@ function bindEvents() {
   el.code.addEventListener("input", () => { el["login-error"].textContent = ""; });
 
   el["logout-btn"].addEventListener("click", logout);
-
-  // Indicador de carga del video.
-  const vid = el["modal-video"];
-  ["loadeddata", "canplay", "playing"].forEach((ev) => vid.addEventListener(ev, hideLoader));
-  vid.addEventListener("waiting", showLoader);
-  vid.addEventListener("error", loaderError);
 
   el["modal-close"].addEventListener("click", closeModal);
   el["modal-overlay"].addEventListener("click", (e) => {
