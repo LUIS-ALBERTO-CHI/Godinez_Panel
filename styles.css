@@ -370,6 +370,7 @@ img.brand-mark {
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .modal-title { font-size: 24px; font-weight: 800; margin: 0 0 6px; }
 .modal-desc { color: var(--text-muted); font-size: 14px; margin: 0; line-height: 1.6; }
+.modal-download { width: auto; margin-top: 14px; }
 
 .modal-close {
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;

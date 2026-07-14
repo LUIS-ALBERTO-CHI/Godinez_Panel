@@ -42,7 +42,7 @@ const el = {};
   "brand-name", "brand-sub",
   "dash-view", "client-badge", "logout-btn", "dash-eyebrow", "dash-client",
   "dash-project", "summary", "video-grid", "year", "foot-site",
-  "modal-overlay", "modal-video", "modal-title", "modal-desc", "modal-close",
+  "modal-overlay", "modal-video", "modal-title", "modal-desc", "modal-close", "download-btn",
   "status-choices", "choice-approved", "choice-changes", "comment-box", "send-btn", "saved-note"
 ].forEach((k) => { el[k] = $(k); });
 
@@ -233,6 +233,10 @@ function openModal(videoId) {
   if (v.poster) el["modal-video"].poster = v.poster;
   else el["modal-video"].removeAttribute("poster");
   el["modal-video"].load();
+
+  // Enlace de descarga (para verlo sin depender del streaming).
+  el["download-btn"].href = v.src;
+  el["download-btn"].setAttribute("download", (v.title || v.id) + ".mp4");
 
   const r = getReview(v.id);
   pendingStatus = r.status === "pending" ? null : r.status;
