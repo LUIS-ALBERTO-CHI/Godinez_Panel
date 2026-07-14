@@ -214,7 +214,7 @@ img.brand-mark {
   backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%);
   border-bottom: 1px solid rgba(255,255,255,0.07);
 }
-.topbar-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; padding-bottom: 16px; }
 .topbar-right { display: flex; align-items: center; gap: 14px; }
 .client-badge {
   font-size: 13px; font-weight: 600; color: var(--text-muted);
@@ -499,7 +499,7 @@ svg.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: rou
   .container { padding: 0 16px; }
 
   /* Barra superior: limpia y sin desborde */
-  .topbar-inner { padding: 12px 0; gap: 10px; }
+  .topbar-inner { padding-top: 12px; padding-bottom: 12px; gap: 10px; }
   .topbar-right { gap: 8px; }
   .topbar .brand-sub { display: none; }
   .brand-name { font-size: 15px; }
