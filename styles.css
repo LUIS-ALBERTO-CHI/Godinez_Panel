@@ -373,6 +373,22 @@ img.brand-mark {
 .modal-download { width: auto; margin-top: 14px; }
 .modal-download.busy { pointer-events: none; opacity: 0.85; }
 
+/* Overlay "Preparando video…" (mientras se precarga, antes de reproducir) */
+.video-prep {
+  position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 16/9;
+  display: none; flex-direction: column; gap: 14px; align-items: center; justify-content: center;
+  z-index: 5; background: rgba(0, 0, 0, 0.72); border-radius: 26px 26px 0 0;
+}
+.video-prep.show { display: flex; }
+.video-prep p { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.spinner {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--primary-cherry);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .modal-close {
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);

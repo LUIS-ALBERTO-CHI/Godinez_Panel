@@ -33,19 +33,44 @@ let activeVideo = null;
 let pendingStatus = null;  // estado elegido en el modal antes de guardar
 let reviews = {};          // { [videoId]: { status, comment } } — en vivo desde Firestore
 let unsubReviews = null;   // función para cancelar el listener de revisiones
-let videoBlobs = {};       // { [src]: objectURL } — videos precargados en memoria
-let prefetching = new Set();
+let videoBlobs = {};       // { [src]: objectURL } — videos ya descargados
+const videoLoads = {};     // { [src]: {promise, listeners, pct} } — descargas en curso
 
-/* Precarga los videos en segundo plano para que reproduzcan sin trabarse. */
+/* Descarga un video UNA sola vez (reutiliza la bajada en curso) y avisa progreso.
+   Así reproducción y descarga comparten la misma bajada; nunca dos a la vez. */
+function loadVideo(src, onProgress) {
+  if (videoBlobs[src]) { if (onProgress) onProgress(100); return Promise.resolve(videoBlobs[src]); }
+  let entry = videoLoads[src];
+  if (!entry) {
+    entry = { listeners: new Set(), pct: 0, promise: null };
+    entry.promise = (async () => {
+      const resp = await fetch(src);
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const total = Number(resp.headers.get("Content-Length")) || 0;
+      const reader = resp.body.getReader();
+      const chunks = []; let received = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); received += value.length;
+        entry.pct = total ? Math.round((received / total) * 100) : 0;
+        entry.listeners.forEach((cb) => { try { cb(entry.pct); } catch (e) {} });
+      }
+      const url = URL.createObjectURL(new Blob(chunks, { type: "video/mp4" }));
+      videoBlobs[src] = url;
+      return url;
+    })();
+    videoLoads[src] = entry;
+  }
+  if (onProgress) { entry.listeners.add(onProgress); onProgress(entry.pct); }
+  return entry.promise;
+}
+
+/* Precarga los videos en segundo plano (uno a uno) para que estén listos. */
 async function prefetchAll(videos) {
   for (const v of (videos || [])) {
-    if (!v.src || videoBlobs[v.src] || prefetching.has(v.src)) continue;
-    prefetching.add(v.src);
-    try {
-      const resp = await fetch(v.src);
-      if (resp.ok) videoBlobs[v.src] = URL.createObjectURL(await resp.blob());
-    } catch (e) { /* si falla, se reproduce por streaming normal */ }
-    prefetching.delete(v.src);
+    if (!v.src) continue;
+    try { await loadVideo(v.src); } catch (e) { /* respaldo: streaming */ }
   }
 }
 
@@ -57,7 +82,8 @@ const el = {};
   "brand-name", "brand-sub",
   "dash-view", "client-badge", "logout-btn", "dash-eyebrow", "dash-client",
   "dash-project", "summary", "video-grid", "year", "foot-site",
-  "modal-overlay", "modal-video", "modal-title", "modal-desc", "modal-close", "download-btn",
+  "modal-overlay", "modal-video", "video-prep", "video-prep-text", "modal-title", "modal-desc",
+  "modal-close", "download-btn",
   "status-choices", "choice-approved", "choice-changes", "comment-box", "send-btn", "saved-note"
 ].forEach((k) => { el[k] = $(k); });
 
@@ -65,6 +91,13 @@ function setNote(msg, isError) {
   el["saved-note"].style.color = isError ? "#ff6a9c" : "";
   el["saved-note"].textContent = msg;
 }
+
+function showPrep(pct) {
+  el["video-prep-text"].textContent = "Preparando video… " + (pct || 0) + "%";
+  el["video-prep"].classList.add("show");
+}
+function updatePrep(pct) { el["video-prep-text"].textContent = "Preparando video… " + pct + "%"; }
+function hidePrep() { el["video-prep"].classList.remove("show"); }
 
 /* ---------- Utilidades ---------- */
 function normCode(code) { return (code || "").trim().toUpperCase(); }
@@ -131,7 +164,7 @@ function logout() {
   if (unsubReviews) { unsubReviews(); unsubReviews = null; }
   Object.values(videoBlobs).forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} });
   videoBlobs = {};
-  prefetching = new Set();
+  for (const k in videoLoads) delete videoLoads[k];
   activeClient = null;
   reviews = {};
   try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
@@ -248,11 +281,33 @@ function openModal(videoId) {
 
   el["modal-title"].textContent = v.title;
   el["modal-desc"].textContent = v.description || "";
-  // Si ya está precargado en memoria, se reproduce desde ahí (sin trabarse).
-  el["modal-video"].src = videoBlobs[v.src] || v.src;
-  if (v.poster) el["modal-video"].poster = v.poster;
-  else el["modal-video"].removeAttribute("poster");
-  el["modal-video"].load();
+  const vid = el["modal-video"];
+  if (v.poster) vid.poster = v.poster;
+  else vid.removeAttribute("poster");
+
+  if (videoBlobs[v.src]) {
+    // Ya está descargado: reproduce al instante desde memoria.
+    hidePrep();
+    vid.src = videoBlobs[v.src];
+    vid.load();
+  } else {
+    // Aún no está listo: espera la MISMA descarga (sin streaming en paralelo).
+    vid.removeAttribute("src");
+    vid.load();
+    showPrep(videoLoads[v.src] ? videoLoads[v.src].pct : 0);
+    loadVideo(v.src, (pct) => { if (activeVideo === v) updatePrep(pct); })
+      .then((url) => {
+        if (activeVideo !== v) return;   // el usuario cambió/cerró
+        hidePrep();
+        vid.src = url; vid.load();
+        const p = vid.play(); if (p && p.catch) p.catch(() => {});
+      })
+      .catch(() => {
+        if (activeVideo !== v) return;
+        hidePrep();
+        vid.src = v.src; vid.load();     // respaldo: streaming
+      });
+  }
 
   // Enlace de descarga (para verlo sin depender del streaming).
   el["download-btn"].href = v.src;
@@ -274,6 +329,7 @@ function closeModal() {
   vid.pause();
   vid.removeAttribute("src");
   vid.load();
+  hidePrep();
   document.body.style.overflow = "";
   activeVideo = null;
 }
@@ -305,43 +361,13 @@ async function downloadVideo(v) {
   const original = "⬇ Descargar video";
   if (btn.classList.contains("busy")) return;
   btn.classList.add("busy");
-
-  // Si ya está precargado, la descarga es instantánea.
-  if (videoBlobs[v.src]) {
-    const a = document.createElement("a");
-    a.href = videoBlobs[v.src];
-    a.download = (v.title || v.id) + ".mp4";
-    document.body.appendChild(a); a.click(); a.remove();
-    btn.textContent = "✓ Descargado — revisa tus descargas";
-    setTimeout(() => { btn.textContent = original; btn.classList.remove("busy"); }, 3000);
-    return;
-  }
-
   try {
-    btn.textContent = "Descargando… 0%";
-    const resp = await fetch(v.src);
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const total = Number(resp.headers.get("Content-Length")) || 0;
-    const reader = resp.body.getReader();
-    const chunks = [];
-    let received = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      received += value.length;
-      btn.textContent = total
-        ? `Descargando… ${Math.round((received / total) * 100)}%`
-        : `Descargando… ${(received / 1e6).toFixed(1)} MB`;
-    }
-    const url = URL.createObjectURL(new Blob(chunks, { type: "video/mp4" }));
+    if (!videoBlobs[v.src]) btn.textContent = "Descargando… 0%";
+    const url = await loadVideo(v.src, (pct) => { btn.textContent = "Descargando… " + pct + "%"; });
     const a = document.createElement("a");
     a.href = url;
     a.download = (v.title || v.id) + ".mp4";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    document.body.appendChild(a); a.click(); a.remove();
     btn.textContent = "✓ Descargado — revisa tus descargas";
   } catch (e) {
     console.error(e);
