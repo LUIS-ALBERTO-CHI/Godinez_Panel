@@ -78,6 +78,14 @@
           <div class="summary" id="summary"></div>
         </header>
 
+        <div class="steps">
+          <div class="step"><span class="step-n">1</span> Abre y mira tu video</div>
+          <div class="step-arrow">→</div>
+          <div class="step"><span class="step-n">2</span> Aprueba o pide cambios</div>
+          <div class="step-arrow">→</div>
+          <div class="step"><span class="step-n">3</span> Envía tu respuesta</div>
+        </div>
+
         <main class="video-grid" id="video-grid"></main>
       </div>
 
@@ -89,35 +97,51 @@
     <!-- ==================== MODAL / REPRODUCTOR ==================== -->
     <div class="modal-overlay" id="modal-overlay">
       <div class="modal" role="dialog" aria-modal="true">
-        <video class="modal-video" id="modal-video" controls preload="metadata" playsinline></video>
-        <div class="video-prep" id="video-prep" aria-hidden="true">
-          <div class="spinner"></div>
-          <p id="video-prep-text">Preparando video…</p>
+        <div class="modal-media">
+          <video class="modal-video" id="modal-video" controls preload="metadata" playsinline></video>
+          <div class="video-prep" id="video-prep" aria-hidden="true">
+            <div class="spinner"></div>
+            <p id="video-prep-text">Preparando video…</p>
+          </div>
         </div>
         <div class="modal-body">
           <div class="modal-head">
             <div>
               <h3 class="modal-title" id="modal-title"></h3>
               <p class="modal-desc" id="modal-desc"></p>
-              <a class="btn btn-ghost btn-sm modal-download" id="download-btn" download>⬇ Descargar video</a>
+              <a class="btn btn-ghost btn-sm modal-download" id="download-btn" download>⬇ ¿Se ve lento o cortado? Descárgalo</a>
             </div>
             <button class="modal-close" id="modal-close" aria-label="Cerrar">&times;</button>
           </div>
 
-          <div class="review">
-            <h4>Tu revisión</h4>
+          <div class="review" id="review-form">
+            <h4 class="review-q">¿Apruebas este video?</h4>
             <div class="status-choices" id="status-choices">
-              <div class="choice" data-status="approved" id="choice-approved">✓ Aprobar</div>
-              <div class="choice" data-status="changes" id="choice-changes">✎ Solicitar cambios</div>
+              <div class="choice" data-status="approved" id="choice-approved">
+                <span class="choice-ico">👍</span>
+                <span class="choice-txt">Sí, apruébenlo</span>
+              </div>
+              <div class="choice" data-status="changes" id="choice-changes">
+                <span class="choice-ico">✏️</span>
+                <span class="choice-txt">Quiero cambios</span>
+              </div>
             </div>
 
+            <label class="comment-label" id="comment-label" for="comment-box">¿Algún comentario? (opcional)</label>
             <textarea class="comment-box" id="comment-box"
-              placeholder="Escribe aquí tus comentarios, correcciones o notas (opcional)…"></textarea>
+              placeholder="Escribe aquí tus comentarios o correcciones…"></textarea>
 
             <div class="review-actions">
-              <button class="btn btn-primary" id="send-btn">Enviar mi revisión</button>
+              <button class="btn btn-primary" id="send-btn">Enviar mi respuesta</button>
             </div>
             <p class="saved-note" id="saved-note"></p>
+          </div>
+
+          <div class="review-success" id="review-success" hidden>
+            <div class="success-check">✓</div>
+            <h4>¡Gracias! Recibimos tu respuesta.</h4>
+            <p>El equipo de Godínez Creativos la revisará. Ya puedes cerrar esta ventana.</p>
+            <button class="btn btn-ghost btn-sm" id="success-close">Cerrar</button>
           </div>
         </div>
       </div>

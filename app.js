@@ -84,6 +84,7 @@ const el = {};
   "dash-project", "summary", "video-grid", "year", "foot-site",
   "modal-overlay", "modal-video", "video-prep", "video-prep-text", "modal-title", "modal-desc",
   "modal-close", "download-btn",
+  "review-form", "review-success", "success-close", "comment-label",
   "status-choices", "choice-approved", "choice-changes", "comment-box", "send-btn", "saved-note"
 ].forEach((k) => { el[k] = $(k); });
 
@@ -106,7 +107,7 @@ function esc(str) {
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-const STATUS_LABEL = { pending: "Pendiente", approved: "Aprobado", changes: "Cambios solicitados" };
+const STATUS_LABEL = { pending: "Pendiente de tu revisión", approved: "Ya lo aprobaste", changes: "Pediste cambios" };
 const STATUS_CLASS = { pending: "pending", approved: "approved", changes: "changes" };
 
 function getReview(videoId) {
@@ -316,7 +317,9 @@ function openModal(videoId) {
   const r = getReview(v.id);
   pendingStatus = r.status === "pending" ? null : r.status;
   el["comment-box"].value = r.comment || "";
-  el["saved-note"].textContent = "";
+  setNote("", false);
+  el["review-form"].hidden = false;
+  el["review-success"].hidden = true;
   updateChoiceUI();
 
   el["modal-overlay"].classList.add("open");
@@ -337,6 +340,9 @@ function closeModal() {
 function updateChoiceUI() {
   el["choice-approved"].classList.toggle("sel-approved", pendingStatus === "approved");
   el["choice-changes"].classList.toggle("sel-changes", pendingStatus === "changes");
+  el["comment-label"].textContent = pendingStatus === "changes"
+    ? "Cuéntanos qué cambiar"
+    : "¿Algún comentario? (opcional)";
 }
 
 /* ---------- Guardar / enviar revisión a Firestore ---------- */
@@ -388,13 +394,13 @@ async function sendFeedback() {
   setNote("Enviando…", false);
   try {
     await persistReview();
-    setNote("✓ ¡Listo! Tu revisión llegó a la agencia.", false);
+    setNote("", false);
+    el["review-form"].hidden = true;
+    el["review-success"].hidden = false;
   } catch (e) {
     console.error(e);
     setNote("No se pudo enviar. Inténtalo de nuevo.", true);
-    return;
   }
-  setTimeout(() => { setNote("", false); }, 4000);
 }
 
 /* ---------- Eventos ---------- */
@@ -430,6 +436,7 @@ function bindEvents() {
   });
 
   el["send-btn"].addEventListener("click", sendFeedback);
+  el["success-close"].addEventListener("click", closeModal);
 }
 
 /* ---------- Init ---------- */
