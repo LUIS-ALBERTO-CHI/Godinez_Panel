@@ -33,6 +33,21 @@ let activeVideo = null;
 let pendingStatus = null;  // estado elegido en el modal antes de guardar
 let reviews = {};          // { [videoId]: { status, comment } } — en vivo desde Firestore
 let unsubReviews = null;   // función para cancelar el listener de revisiones
+let videoBlobs = {};       // { [src]: objectURL } — videos precargados en memoria
+let prefetching = new Set();
+
+/* Precarga los videos en segundo plano para que reproduzcan sin trabarse. */
+async function prefetchAll(videos) {
+  for (const v of (videos || [])) {
+    if (!v.src || videoBlobs[v.src] || prefetching.has(v.src)) continue;
+    prefetching.add(v.src);
+    try {
+      const resp = await fetch(v.src);
+      if (resp.ok) videoBlobs[v.src] = URL.createObjectURL(await resp.blob());
+    } catch (e) { /* si falla, se reproduce por streaming normal */ }
+    prefetching.delete(v.src);
+  }
+}
 
 /* ---------- Helpers DOM ---------- */
 const $ = (id) => document.getElementById(id);
@@ -114,6 +129,9 @@ function startSession(code, data) {
 
 function logout() {
   if (unsubReviews) { unsubReviews(); unsubReviews = null; }
+  Object.values(videoBlobs).forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} });
+  videoBlobs = {};
+  prefetching = new Set();
   activeClient = null;
   reviews = {};
   try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
@@ -143,6 +161,7 @@ function renderDashboard() {
   el["dash-eyebrow"].textContent = n + (n === 1 ? " entrega" : " entregas");
   renderSummary();
   renderVideos();
+  prefetchAll(c.videos);   // precarga en segundo plano
 }
 
 function renderSummary() {
@@ -229,7 +248,8 @@ function openModal(videoId) {
 
   el["modal-title"].textContent = v.title;
   el["modal-desc"].textContent = v.description || "";
-  el["modal-video"].src = v.src;
+  // Si ya está precargado en memoria, se reproduce desde ahí (sin trabarse).
+  el["modal-video"].src = videoBlobs[v.src] || v.src;
   if (v.poster) el["modal-video"].poster = v.poster;
   else el["modal-video"].removeAttribute("poster");
   el["modal-video"].load();
@@ -285,6 +305,18 @@ async function downloadVideo(v) {
   const original = "⬇ Descargar video";
   if (btn.classList.contains("busy")) return;
   btn.classList.add("busy");
+
+  // Si ya está precargado, la descarga es instantánea.
+  if (videoBlobs[v.src]) {
+    const a = document.createElement("a");
+    a.href = videoBlobs[v.src];
+    a.download = (v.title || v.id) + ".mp4";
+    document.body.appendChild(a); a.click(); a.remove();
+    btn.textContent = "✓ Descargado — revisa tus descargas";
+    setTimeout(() => { btn.textContent = original; btn.classList.remove("busy"); }, 3000);
+    return;
+  }
+
   try {
     btn.textContent = "Descargando… 0%";
     const resp = await fetch(v.src);
