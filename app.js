@@ -179,6 +179,48 @@ function filmIcon() {
     '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>';
 }
 
+/* ---------- Miniaturas automáticas (fotograma del propio video) ---------- */
+const thumbCache = {};        // src -> dataURL (memoria de sesión)
+const thumbPending = new Set();
+
+function applyThumb(videoId, dataUrl) {
+  document.querySelectorAll('.thumb[data-video="' + (window.CSS ? CSS.escape(videoId) : videoId) + '"]').forEach((t) => {
+    t.style.backgroundImage = "url('" + dataUrl + "')";
+    const fb = t.querySelector(".thumb-fallback");
+    if (fb) fb.remove();
+  });
+}
+
+function generateThumb(src, videoId) {
+  const v = document.createElement("video");
+  v.crossOrigin = "anonymous";
+  v.muted = true;
+  v.preload = "metadata";
+  v.src = src;
+
+  const cleanup = () => { v.removeAttribute("src"); v.load(); };
+
+  v.addEventListener("loadedmetadata", () => {
+    try { v.currentTime = Math.min(1, (v.duration || 2) / 2); } catch (e) {}
+  });
+  v.addEventListener("seeked", () => {
+    try {
+      const w = 640;
+      const ratio = (v.videoHeight || 9) / (v.videoWidth || 16);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = Math.round(w * ratio);
+      c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+      const data = c.toDataURL("image/jpeg", 0.72);
+      thumbCache[src] = data;
+      applyThumb(videoId, data);
+    } catch (e) {
+      // Si falla (CORS u otro), se queda el ícono de respaldo.
+    }
+    cleanup();
+  });
+  v.addEventListener("error", cleanup);
+}
+
 function renderVideos() {
   const c = activeClient;
   const grid = el["video-grid"];
@@ -195,8 +237,9 @@ function renderVideos() {
     const card = document.createElement("article");
     card.className = "video-card";
 
-    const posterStyle = v.poster ? ` style="background-image:url('${esc(v.poster)}')"` : "";
-    const fallback = v.poster ? "" : `<div class="thumb-fallback">${filmIcon()}</div>`;
+    const poster = v.poster || thumbCache[v.src] || "";
+    const posterStyle = poster ? ` style="background-image:url('${esc(poster)}')"` : "";
+    const fallback = poster ? "" : `<div class="thumb-fallback">${filmIcon()}</div>`;
     const versionTag = v.version ? `<span class="version-tag">${esc(v.version)}</span>` : "";
     const tags = (v.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("");
 
@@ -222,6 +265,12 @@ function renderVideos() {
       </div>
     `;
     grid.appendChild(card);
+
+    // Genera la miniatura del video si no tiene poster (una sola vez por src).
+    if (!v.poster && !thumbCache[v.src] && !thumbPending.has(v.src)) {
+      thumbPending.add(v.src);
+      generateThumb(v.src, v.id);
+    }
   });
 
   // listeners
