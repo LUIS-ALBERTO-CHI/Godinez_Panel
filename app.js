@@ -83,7 +83,7 @@ const el = {};
   "dash-view", "client-badge", "logout-btn", "dash-eyebrow", "dash-client",
   "dash-project", "summary", "video-grid", "year", "foot-site",
   "modal-overlay", "modal-video", "video-prep", "video-prep-text", "modal-title", "modal-desc",
-  "modal-close", "download-btn",
+  "modal-close", "download-btn", "download-label",
   "review-form", "review-success", "success-close", "comment-label",
   "status-choices", "choice-approved", "choice-changes", "comment-box", "send-btn", "saved-note"
 ].forEach((k) => { el[k] = $(k); });
@@ -313,6 +313,8 @@ function openModal(videoId) {
   // Enlace de descarga (para verlo sin depender del streaming).
   el["download-btn"].href = v.src;
   el["download-btn"].setAttribute("download", (v.title || v.id) + ".mp4");
+  el["download-btn"].classList.remove("busy");
+  el["download-label"].textContent = DOWNLOAD_LABEL;
 
   const r = getReview(v.id);
   pendingStatus = r.status === "pending" ? null : r.status;
@@ -362,24 +364,25 @@ async function persistReview() {
   return payload;
 }
 
+const DOWNLOAD_LABEL = "¿Se ve lento o cortado? Descárgalo";
 async function downloadVideo(v) {
   const btn = el["download-btn"];
-  const original = "⬇ Descargar video";
+  const label = el["download-label"];
   if (btn.classList.contains("busy")) return;
   btn.classList.add("busy");
   try {
-    if (!videoBlobs[v.src]) btn.textContent = "Descargando… 0%";
-    const url = await loadVideo(v.src, (pct) => { btn.textContent = "Descargando… " + pct + "%"; });
+    if (!videoBlobs[v.src]) label.textContent = "Descargando… 0%";
+    const url = await loadVideo(v.src, (pct) => { label.textContent = "Descargando… " + pct + "%"; });
     const a = document.createElement("a");
     a.href = url;
     a.download = (v.title || v.id) + ".mp4";
     document.body.appendChild(a); a.click(); a.remove();
-    btn.textContent = "✓ Descargado — revisa tus descargas";
+    label.textContent = "✓ Descargado — revisa tus descargas";
   } catch (e) {
     console.error(e);
-    btn.textContent = "No se pudo descargar. Reintenta.";
+    label.textContent = "No se pudo descargar. Reintenta.";
   }
-  setTimeout(() => { btn.textContent = original; btn.classList.remove("busy"); }, 3000);
+  setTimeout(() => { label.textContent = DOWNLOAD_LABEL; btn.classList.remove("busy"); }, 3000);
 }
 
 async function sendFeedback() {
