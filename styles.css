@@ -250,7 +250,7 @@ img.brand-mark {
 /* Video grid --------------------------------------------------------------- */
 .video-grid {
   display: grid; gap: 26px; padding: 34px 0 80px;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
 .video-card {
@@ -261,7 +261,7 @@ img.brand-mark {
   border-radius: 24px; overflow: hidden;
   transition: all 0.5s var(--ease);
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; height: 100%;
 }
 .video-card:hover {
   transform: translateY(-6px);
@@ -270,7 +270,7 @@ img.brand-mark {
 }
 
 .thumb {
-  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  position: relative; width: 100%; aspect-ratio: 4 / 5;
   background: #080104 center/cover no-repeat;
   cursor: pointer; overflow: hidden;
   display: grid; place-items: center;
@@ -521,11 +521,11 @@ svg.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: rou
   .login-card { padding: 34px 22px; border-radius: 22px; }
   .login-title { font-size: 23px; }
 
-  /* Modal a pantalla completa en el teléfono (sin borde rosa ni desborde) */
-  .modal-overlay { padding: 0; }
-  .modal { max-width: 100%; width: 100%; max-height: 100vh; border: none; border-radius: 0; }
-  .modal-media { border-radius: 0; min-height: 0; max-height: 56vh; }
-  .modal-video { max-height: 56vh; }
+  /* Modal tipo "hoja" con aire arriba (sin borde rosa ni desborde) */
+  .modal-overlay { padding: max(14px, env(safe-area-inset-top)) 0 0; align-items: flex-start; }
+  .modal { max-width: 100%; width: 100%; max-height: 100vh; border: none; border-radius: 18px 18px 0 0; }
+  .modal-media { border-radius: 18px 18px 0 0; min-height: 0; max-height: 52vh; }
+  .modal-video { max-height: 52vh; }
   .modal-body { padding: 20px 18px 26px; }
   .modal-title { font-size: 20px; }
   .modal-head { gap: 12px; }
@@ -618,7 +618,12 @@ svg.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: rou
   .admin-form-actions .btn { flex: 1; }
 }
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-color); }
-::-webkit-scrollbar-thumb { background: var(--primary-cherry); border-radius: 10px; }
+/* Scrollbars (discretos, no una franja rosa sólida) */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(246, 5, 102, 0.35); border-radius: 10px;
+  border: 2px solid transparent; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(246, 5, 102, 0.6); background-clip: padding-box; }
+* { scrollbar-width: thin; scrollbar-color: rgba(246,5,102,0.4) transparent; }

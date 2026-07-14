@@ -108,6 +108,11 @@ function esc(str) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 const STATUS_LABEL = { pending: "Pendiente de tu revisión", approved: "Ya lo aprobaste", changes: "Pediste cambios" };
+// Normaliza el título a "Tipo Título" para que se vea consistente
+// (evita mezclas como "REEL - X" / "reel - x" / "Reel - X").
+function toTitle(s) {
+  return String(s == null ? "" : s).toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+}
 const STATUS_CLASS = { pending: "pending", approved: "approved", changes: "changes" };
 
 function getReview(videoId) {
@@ -249,7 +254,7 @@ function renderVideos() {
         <div class="play-btn">${playIcon()}</div>
       </div>
       <div class="card-body">
-        <h3 class="card-title">${esc(v.title)}</h3>
+        <h3 class="card-title">${esc(toTitle(v.title))}</h3>
         ${v.description ? `<p class="card-desc">${esc(v.description)}</p>` : ""}
         ${tags ? `<div class="tags">${tags}</div>` : ""}
         <div class="status-row">
@@ -280,7 +285,7 @@ function openModal(videoId) {
   if (!v) return;
   activeVideo = v;
 
-  el["modal-title"].textContent = v.title;
+  el["modal-title"].textContent = toTitle(v.title);
   el["modal-desc"].textContent = v.description || "";
   const vid = el["modal-video"];
   if (v.poster) vid.poster = v.poster;
