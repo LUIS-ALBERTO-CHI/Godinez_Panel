@@ -280,6 +280,44 @@ async function persistReview() {
   return payload;
 }
 
+async function downloadVideo(v) {
+  const btn = el["download-btn"];
+  const original = "⬇ Descargar video";
+  if (btn.classList.contains("busy")) return;
+  btn.classList.add("busy");
+  try {
+    btn.textContent = "Descargando… 0%";
+    const resp = await fetch(v.src);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const total = Number(resp.headers.get("Content-Length")) || 0;
+    const reader = resp.body.getReader();
+    const chunks = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      btn.textContent = total
+        ? `Descargando… ${Math.round((received / total) * 100)}%`
+        : `Descargando… ${(received / 1e6).toFixed(1)} MB`;
+    }
+    const url = URL.createObjectURL(new Blob(chunks, { type: "video/mp4" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (v.title || v.id) + ".mp4";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    btn.textContent = "✓ Descargado — revisa tus descargas";
+  } catch (e) {
+    console.error(e);
+    btn.textContent = "No se pudo descargar. Reintenta.";
+  }
+  setTimeout(() => { btn.textContent = original; btn.classList.remove("busy"); }, 3000);
+}
+
 async function sendFeedback() {
   // Obliga a elegir un estado antes de enviar.
   if (!pendingStatus) {
@@ -310,6 +348,11 @@ function bindEvents() {
   el.code.addEventListener("input", () => { el["login-error"].textContent = ""; });
 
   el["logout-btn"].addEventListener("click", logout);
+
+  el["download-btn"].addEventListener("click", (e) => {
+    e.preventDefault();
+    if (activeVideo) downloadVideo(activeVideo);
+  });
 
   el["modal-close"].addEventListener("click", closeModal);
   el["modal-overlay"].addEventListener("click", (e) => {
